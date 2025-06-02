@@ -8,26 +8,33 @@ st.set_page_config(page_title="Предсказание цены")
 
 st.title("Предсказание стоимости жилья в Мумбаи")
 
-# Пути
+# Папка с моделями и их имена (проверь, чтобы имена файлов совпадали)
 MODEL_DIR = "models"
 MODEL_NAMES = {
     "Decision Tree Regressor": "best_decision_tree_regressor_gridsearch.joblib",
-    "Gradient Boosting": "best_gradient_boosting_regressor_.joblib",
+    "Gradient Boosting": "best_gradient_boosting_regressor.joblib",  # Убрал лишнее подчеркивание
     "CatBoost": "catboost_regressor_model.joblib",
     "Bagging": "best_bagging_regressor_gridsearch.joblib",
     "Stacking (DT + ElasticNet)": "best_stacking_regressor_elasticnet_gridsearch.joblib"
 }
 
-# Выбор модели
 st.sidebar.header("Выберите модель")
 model_name = st.sidebar.selectbox("Модель:", list(MODEL_NAMES.keys()))
 model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
+st.write(f"Путь к модели: {model_path}")
 
-@st.cache_resource
 def load_model(path):
-    return joblib.load(path)
+    try:
+        model = joblib.load(path)
+        st.success(f"Модель успешно загружена: {path}")
+        return model
+    except Exception as e:
+        st.error(f"Ошибка при загрузке модели: {e}")
+        return None
 
 model = load_model(model_path)
+if model is None:
+    st.stop()  # Останавливаем выполнение, если модель не загрузилась
 
 def make_prediction(df):
     if 'price' in df.columns:
@@ -35,7 +42,7 @@ def make_prediction(df):
     prediction = model.predict(df)
     return prediction
 
-# Способ ввода
+# Выбор способа ввода данных
 input_method = st.radio("Как вы хотите ввести данные?", ["Загрузить CSV", "Ввести вручную"])
 
 if input_method == "Загрузить CSV":
@@ -43,33 +50,33 @@ if input_method == "Загрузить CSV":
     if uploaded_file is not None:
         input_df = pd.read_csv(uploaded_file)
         st.write("Входные данные:")
-        st.dataframe(input_df.head(10))  # Покажем первые 10 строк
+        st.dataframe(input_df.head(10))  # Показываем первые 10 строк
 
         if st.button("Сделать предсказание"):
-            preds = make_prediction(input_df)
-            preds_rounded = [round(p) for p in preds]
-            formatted_preds = [f"{p:,} ₹" for p in preds_rounded]
+            try:
+                preds = make_prediction(input_df)
+                preds_rounded = [round(p) for p in preds]
+                formatted_preds = [f"{p:,} ₹" for p in preds_rounded]
 
-            # Показ первых 10
-            st.write("### Предсказанные цены (первые 10):")
-            for i, price in enumerate(formatted_preds[:10], start=1):
-                st.write(f"{i}. {price}")
+                st.write("### Предсказанные цены (первые 10):")
+                for i, price in enumerate(formatted_preds[:10], start=1):
+                    st.write(f"{i}. {price}")
 
-            # Подготовка к скачиванию
-            result_df = input_df.copy()
-            result_df["Predicted Price (₹)"] = preds_rounded
+                result_df = input_df.copy()
+                result_df["Predicted Price (₹)"] = preds_rounded
 
-            csv = result_df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="Скачать все предсказания (CSV)",
-                data=csv,
-                file_name="predictions.csv",
-                mime="text/csv"
-            )
+                csv = result_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="Скачать все предсказания (CSV)",
+                    data=csv,
+                    file_name="predictions.csv",
+                    mime="text/csv"
+                )
 
-            # Гистограмма
-            st.write("### Распределение предсказанных цен")
-            st.bar_chart(pd.Series(preds_rounded).value_counts().sort_index())
+                st.write("### Распределение предсказанных цен")
+                st.bar_chart(pd.Series(preds_rounded).value_counts().sort_index())
+            except Exception as e:
+                st.error(f"Ошибка при предсказании: {e}")
 
 else:
     st.write("Введите данные вручную:")
@@ -95,5 +102,8 @@ else:
     ])
 
     if st.button("Предсказать цену"):
-        prediction = make_prediction(single_input)[0]
-        st.success(f"Прогнозируемая цена: **{round(prediction):,} ₹**")
+        try:
+            prediction = make_prediction(single_input)[0]
+            st.success(f"Прогнозируемая цена: **{round(prediction):,} ₹**")
+        except Exception as e:
+            st.error(f"Ошибка при предсказании: {e}")
