@@ -3,6 +3,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import sklearn
+st.write(f"scikit-learn version: {sklearn.__version__}")
 
 st.set_page_config(page_title="Предсказание цены")
 
