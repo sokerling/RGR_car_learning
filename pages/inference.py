@@ -6,13 +6,13 @@ import os
 
 st.set_page_config(page_title="Предсказание цены")
 
-st.title("Предсказание стоимости жилья в Мумбаи:")
+st.title("Предсказание стоимости жилья в Мумбаи")
 
 # Пути
 MODEL_DIR = "models"
 MODEL_NAMES = {
     "Decision Tree Regressor": "best_decision_tree_regressor_gridsearch.joblib",
-    "Gradient Boosting": "best_gradient_boosting_regressor.joblib",
+    "Gradient Boosting": "best_gradient_boosting_regressor_.joblib",
     "CatBoost": "catboost_regressor_model.joblib",
     "Bagging": "best_bagging_regressor_gridsearch.joblib",
     "Stacking (DT + ElasticNet)": "best_stacking_regressor_elasticnet_gridsearch.joblib"
