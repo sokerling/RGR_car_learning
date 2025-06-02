@@ -21,7 +21,6 @@ MODEL_NAMES = {
 st.sidebar.header("Выберите модель")
 model_name = st.sidebar.selectbox("Модель:", list(MODEL_NAMES.keys()))
 model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
-st.write(f"Путь к модели: {model_path}")
 
 def load_model(path):
     try:
