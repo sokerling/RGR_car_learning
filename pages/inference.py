@@ -6,7 +6,7 @@ import os
 
 st.set_page_config(page_title="Предсказание цены")
 
-st.title("Предсказание стоимости жилья в Мумбаи")
+st.title("Предсказание стоимости жилья в Мумбаи:")
 
 # Пути
 MODEL_DIR = "models"
