@@ -1,10 +1,8 @@
-from sklearn.ensemble import GradientBoostingRegressor
 import streamlit as st
 import pandas as pd
 import joblib
 import os
-import sklearn
-st.write(f"scikit-learn versionт: {sklearn.__version__}")
+
 
 st.set_page_config(page_title="Предсказание цены")
 
@@ -14,7 +12,7 @@ st.title("Предсказание стоимости жилья в Мумбаи
 MODEL_DIR = "models"
 MODEL_NAMES = {
     "Decision Tree Regressor": "best_decision_tree_regressor_gridsearch.joblib",
-    "Gradient Boosting": "best_gradient_boosting_regressor_.joblib",  # Убрал лишнее подчеркивание
+    "Gradient Boosting": "best_gradient_boosting_regressor_gridsearch_.joblib",
     "CatBoost": "catboost_regressor_model.joblib",
     "Bagging": "best_bagging_regressor_gridsearch.joblib",
     "Stacking (DT + ElasticNet)": "best_stacking_regressor_elasticnet_gridsearch.joblib"
