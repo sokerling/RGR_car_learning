@@ -54,7 +54,7 @@ if input_method == "Загрузить CSV":
             if not selected_models:
                 st.warning("Пожалуйста, выберите хотя бы одну модель.")
             else:
-                results = input_df.copy()
+                predictions_df = pd.DataFrame()
                 for model_name in selected_models:
                     model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
                     model = load_model(model_path)
@@ -62,26 +62,26 @@ if input_method == "Загрузить CSV":
                         try:
                             preds = make_prediction(model, input_df)
                             preds_rounded = [round(p) for p in preds]
-                            results[f"{model_name} (₹)"] = preds_rounded
+                            predictions_df[model_name] = preds_rounded
                         except Exception as e:
                             st.error(f"Ошибка при предсказании ({model_name}): {e}")
 
-                st.write("### Результаты предсказаний (первые 10 строк)")
-                st.dataframe(results.head(10))
+                if not predictions_df.empty:
+                    st.write("### Таблица предсказанных цен по моделям")
+                    st.dataframe(predictions_df)
 
-                csv = results.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    label="Скачать предсказания (CSV)",
-                    data=csv,
-                    file_name="multi_model_predictions.csv",
-                    mime="text/csv"
-                )
+                    csv = predictions_df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="Скачать предсказания (CSV)",
+                        data=csv,
+                        file_name="multi_model_predictions.csv",
+                        mime="text/csv"
+                    )
 
-                st.write("### Гистограмма предсказанных цен по моделям")
-                for model_name in selected_models:
-                    col_name = f"{model_name} (₹)"
-                    if col_name in results.columns:
-                        st.bar_chart(results[col_name].value_counts().sort_index())
+                    st.write("### Гистограмма предсказаний по каждой модели")
+                    for model_name in predictions_df.columns:
+                        st.write(f"Модель: {model_name}")
+                        st.bar_chart(predictions_df[model_name].value_counts().sort_index())
 
 else:
     st.write("Введите данные вручную:")
