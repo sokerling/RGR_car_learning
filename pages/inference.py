@@ -3,12 +3,10 @@ import pandas as pd
 import joblib
 import os
 
-
 st.set_page_config(page_title="Предсказание цены")
 
 st.title("Предсказание стоимости жилья в Мумбаи")
 
-# Папка с моделями и их имена (проверь, чтобы имена файлов совпадали)
 MODEL_DIR = "models"
 MODEL_NAMES = {
     "Decision Tree Regressor": "best_decision_tree_regressor_gridsearch.joblib",
@@ -18,28 +16,16 @@ MODEL_NAMES = {
     "Stacking (DT + ElasticNet)": "best_stacking_regressor_elasticnet_gridsearch.joblib"
 }
 
-st.sidebar.header("Выберите модель")
-model_name = st.sidebar.selectbox("Модель:", list(MODEL_NAMES.keys()))
-model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
+st.sidebar.header("Выберите модели")
+selected_models = st.sidebar.multiselect("Модели:", list(MODEL_NAMES.keys()), default=list(MODEL_NAMES.keys())[:1])
 
 def load_model(path):
     try:
         model = joblib.load(path)
-        st.success(f"Модель успешно загружена: {path}")
         return model
     except Exception as e:
-        st.error(f"Ошибка при загрузке модели: {e}")
+        st.error(f"Ошибка при загрузке модели {path}: {e}")
         return None
-
-model = load_model(model_path)
-if model is None:
-    st.stop()  # Останавливаем выполнение, если модель не загрузилась
-
-def make_prediction(df):
-    if 'price' in df.columns:
-        df = df.drop(columns=['price'])
-    prediction = model.predict(df)
-    return prediction
 
 # Выбор способа ввода данных
 input_method = st.radio("Как вы хотите ввести данные?", ["Загрузить CSV", "Ввести вручную"])
@@ -49,33 +35,45 @@ if input_method == "Загрузить CSV":
     if uploaded_file is not None:
         input_df = pd.read_csv(uploaded_file)
         st.write("Входные данные:")
-        st.dataframe(input_df.head(10))  # Показываем первые 10 строк
+        st.dataframe(input_df.head(10))
 
         if st.button("Сделать предсказание"):
-            try:
-                preds = make_prediction(input_df)
-                preds_rounded = [round(p) for p in preds]
-                formatted_preds = [f"{p:,} ₹" for p in preds_rounded]
+            if not selected_models:
+                st.warning("Пожалуйста, выберите хотя бы одну модель.")
+            else:
+                try:
+                    # Создаём DataFrame для результатов предсказаний
+                    preds_df = pd.DataFrame(index=input_df.index)
 
-                st.write("### Предсказанные цены (первые 10):")
-                for i, price in enumerate(formatted_preds[:10], start=1):
-                    st.write(f"{i}. {price}")
+                    # Для каждой выбранной модели загрузим модель, сделаем предсказание и добавим столбец
+                    for model_name in selected_models:
+                        model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
+                        model = load_model(model_path)
+                        if model is None:
+                            st.error(f"Модель {model_name} не загружена, пропускаем.")
+                            continue
+                        df_for_pred = input_df.copy()
+                        if 'price' in df_for_pred.columns:
+                            df_for_pred = df_for_pred.drop(columns=['price'])
+                        preds = model.predict(df_for_pred)
+                        preds_rounded = [round(p) for p in preds]
+                        preds_df[model_name] = preds_rounded
 
-                result_df = input_df.copy()
-                result_df["Predicted Price (₹)"] = preds_rounded
+                    st.write("### Предсказанные цены (первые 10 строк):")
+                    st.dataframe(preds_df.head(10))
 
-                csv = result_df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    label="Скачать все предсказания (CSV)",
-                    data=csv,
-                    file_name="predictions.csv",
-                    mime="text/csv"
-                )
+                    # Для скачивания объединим исходные данные и предсказания
+                    result_df = pd.concat([input_df.reset_index(drop=True), preds_df.reset_index(drop=True)], axis=1)
+                    csv = result_df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="Скачать все предсказания (CSV)",
+                        data=csv,
+                        file_name="predictions.csv",
+                        mime="text/csv"
+                    )
 
-                st.write("### Распределение предсказанных цен")
-                st.bar_chart(pd.Series(preds_rounded).value_counts().sort_index())
-            except Exception as e:
-                st.error(f"Ошибка при предсказании: {e}")
+                except Exception as e:
+                    st.error(f"Ошибка при предсказании: {e}")
 
 else:
     st.write("Введите данные вручную:")
@@ -92,7 +90,7 @@ else:
     lift = st.selectbox("Лифт (0 - нет, 1 - есть)", [0, 1])
     building_type = st.selectbox("Тип здания (0 - обычное, 1 - элитное и т.д.)", [0, 1, 2])
 
-    single_input = pd.DataFrame([[
+    single_input = pd.DataFrame([[ 
         area, latitude, longitude, bedrooms, bathrooms, balcony,
         status, neworold, parking, furnished, lift, building_type
     ]], columns=[
@@ -101,8 +99,23 @@ else:
     ])
 
     if st.button("Предсказать цену"):
-        try:
-            prediction = make_prediction(single_input)[0]
-            st.success(f"Прогнозируемая цена: **{round(prediction):,} ₹**")
-        except Exception as e:
-            st.error(f"Ошибка при предсказании: {e}")
+        if not selected_models:
+            st.warning("Пожалуйста, выберите хотя бы одну модель.")
+        else:
+            try:
+                preds = {}
+                for model_name in selected_models:
+                    model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
+                    model = load_model(model_path)
+                    if model is None:
+                        st.error(f"Модель {model_name} не загружена, пропускаем.")
+                        continue
+                    pred = model.predict(single_input)[0]
+                    preds[model_name] = round(pred)
+
+                # Выводим результаты в таблице
+                st.write("### Предсказанные цены:")
+                st.table(pd.DataFrame([preds]))
+
+            except Exception as e:
+                st.error(f"Ошибка при предсказании: {e}")
