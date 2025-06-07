@@ -42,10 +42,8 @@ if input_method == "Загрузить CSV":
                 st.warning("Пожалуйста, выберите хотя бы одну модель.")
             else:
                 try:
-                    # Создаём DataFrame для результатов предсказаний
                     preds_df = pd.DataFrame(index=input_df.index)
 
-                    # Для каждой выбранной модели загрузим модель, сделаем предсказание и добавим столбец
                     for model_name in selected_models:
                         model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
                         model = load_model(model_path)
@@ -62,7 +60,12 @@ if input_method == "Загрузить CSV":
                     st.write("### Предсказанные цены (первые 10 строк):")
                     st.dataframe(preds_df.head(10))
 
-                    # Для скачивания объединим исходные данные и предсказания
+                    # Вывод распределения предсказаний по каждой модели
+                    st.write("### Распределение предсказанных цен по моделям:")
+                    for model_name in preds_df.columns:
+                        st.write(f"**{model_name}**")
+                        st.bar_chart(pd.Series(preds_df[model_name]).value_counts().sort_index())
+
                     result_df = pd.concat([input_df.reset_index(drop=True), preds_df.reset_index(drop=True)], axis=1)
                     csv = result_df.to_csv(index=False).encode("utf-8")
                     st.download_button(
