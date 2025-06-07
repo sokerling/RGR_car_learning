@@ -86,16 +86,38 @@ else:
     bedrooms = st.slider("Количество спален", 1, 10, 2)
     bathrooms = st.slider("Количество ванных", 1, 10, 2)
     balcony = st.slider("Балконов", 0, 5, 1)
-    status = st.selectbox("Статус (0 - готово, 1 - строится)", [0, 1])
-    neworold = st.selectbox("Новостройка? (0 - да, 1 - вторичка)", [0, 1])
-    parking = st.slider("Парковочных мест", 0, 5, 1)
-    furnished = st.selectbox("Меблировка (0 - нет, 1 - частично, 2 - полная)", [0, 1, 2])
-    lift = st.selectbox("Лифт (0 - нет, 1 - есть)", [0, 1])
-    building_type = st.selectbox("Тип здания (0 - обычное, 1 - элитное и т.д.)", [0, 1, 2])
 
-    single_input = pd.DataFrame([[ 
-        area, latitude, longitude, bedrooms, bathrooms, balcony,
-        status, neworold, parking, furnished, lift, building_type
+    status_map = {"Готово": 0, "Строится": 1}
+    status = st.selectbox("Статус объекта", list(status_map.keys()))
+
+    neworold_map = {"Новостройка": 0, "Вторичка": 1}
+    neworold = st.selectbox("Тип жилья", list(neworold_map.keys()))
+
+    parking = st.slider("Парковочных мест", 0, 5, 1)
+
+    furnished_map = {"Нет": 0, "Частично": 1, "Полная": 2}
+    furnished = st.selectbox("Меблировка", list(furnished_map.keys()))
+
+    lift_map = {"Без лифта": 0, "С лифтом": 1}
+    lift = st.selectbox("Лифт", list(lift_map.keys()))
+
+    building_type_map = {"Обычное": 0, "Элитное": 1}
+    building_type = st.selectbox("Тип здания", list(building_type_map.keys()))
+
+    # Собираем числовые коды из выбранных текстов
+    single_input = pd.DataFrame([[
+        area,
+        latitude,
+        longitude,
+        bedrooms,
+        bathrooms,
+        balcony,
+        status_map[status],
+        neworold_map[neworold],
+        parking,
+        furnished_map[furnished],
+        lift_map[lift],
+        building_type_map[building_type]
     ]], columns=[
         'area', 'latitude', 'longitude', 'Bedrooms', 'Bathrooms', 'Balcony',
         'Status', 'neworold', 'parking', 'Furnished_status', 'Lift', 'type_of_building'
@@ -116,7 +138,6 @@ else:
                     pred = model.predict(single_input)[0]
                     preds[model_name] = round(pred)
 
-                # Выводим результаты в таблице
                 st.write("### Предсказанные цены:")
                 st.table(pd.DataFrame([preds]))
 
