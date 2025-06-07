@@ -13,7 +13,8 @@ MODEL_NAMES = {
     "Gradient Boosting": "best_gradient_boosting_regressor_gridsearch.joblib",
     "CatBoost": "catboost_regressor_model.joblib",
     "Bagging": "best_bagging_regressor_gridsearch.joblib",
-    "Stacking (DT + ElasticNet)": "best_stacking_regressor_elasticnet_gridsearch.joblib"
+    "Stacking (DT + ElasticNet)": "best_stacking_regressor_elasticnet_gridsearch.joblib",
+    "Neural Network": "best_nuero_rand.joblib"
 }
 
 st.sidebar.header("Выберите модели")
