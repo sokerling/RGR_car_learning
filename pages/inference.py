@@ -43,45 +43,44 @@ def make_prediction(model, df):
 # Способ ввода данных
 input_method = st.radio("Как вы хотите ввести данные?", ["Загрузить CSV", "Ввести вручную"])
 
-if input_method == "Загрузить CSV":
-    uploaded_file = st.file_uploader("Загрузите CSV-файл", type="csv")
-    if uploaded_file is not None:
-        input_df = pd.read_csv(uploaded_file)
-        st.write("Входные данные:")
-        st.dataframe(input_df.head(10))
+if st.button("Сделать предсказание"):
+    if not selected_models:
+        st.warning("Пожалуйста, выберите хотя бы одну модель.")
+    else:
+        predictions = {}
+        for model_name in selected_models:
+            model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
+            model = load_model(model_path)
+            if model:
+                try:
+                    preds = make_prediction(model, input_df)
+                    predictions[model_name] = [round(p) for p in preds]
+                except Exception as e:
+                    st.error(f"Ошибка при предсказании ({model_name}): {e}")
 
-        if st.button("Сделать предсказание"):
-            if not selected_models:
-                st.warning("Пожалуйста, выберите хотя бы одну модель.")
-            else:
-                predictions_df = pd.DataFrame()
-                for model_name in selected_models:
-                    model_path = os.path.join(MODEL_DIR, MODEL_NAMES[model_name])
-                    model = load_model(model_path)
-                    if model:
-                        try:
-                            preds = make_prediction(model, input_df)
-                            preds_rounded = [round(p) for p in preds]
-                            predictions_df[model_name] = preds_rounded
-                        except Exception as e:
-                            st.error(f"Ошибка при предсказании ({model_name}): {e}")
+        if predictions:
+            # Объединяем входные данные и предсказания
+            results_df = input_df.copy()
+            for model_name, preds in predictions.items():
+                results_df[model_name] = preds
 
-                if not predictions_df.empty:
-                    st.write("### Таблица предсказанных цен по моделям")
-                    st.dataframe(predictions_df)
+            st.write("### Результаты предсказаний (первые 10 строк):")
+            st.dataframe(results_df.head(10))
 
-                    csv = predictions_df.to_csv(index=False).encode("utf-8")
-                    st.download_button(
-                        label="Скачать предсказания (CSV)",
-                        data=csv,
-                        file_name="multi_model_predictions.csv",
-                        mime="text/csv"
-                    )
+            # Кнопка загрузки
+            csv = results_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="Скачать предсказания (CSV)",
+                data=csv,
+                file_name="multi_model_predictions.csv",
+                mime="text/csv"
+            )
 
-                    st.write("### Гистограмма предсказаний по каждой модели")
-                    for model_name in predictions_df.columns:
-                        st.write(f"Модель: {model_name}")
-                        st.bar_chart(predictions_df[model_name].value_counts().sort_index())
+            # Гистограммы по моделям
+            st.write("### Гистограмма предсказаний по каждой модели:")
+            for model_name in selected_models:
+                st.write(f"Модель: {model_name}")
+                st.bar_chart(pd.Series(predictions[model_name]).value_counts().sort_index())
 
 else:
     st.write("Введите данные вручную:")
